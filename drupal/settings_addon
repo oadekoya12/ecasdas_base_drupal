@@ -1,0 +1,16 @@
+$settings['file_temp_path'] = '/tmp';
+$settings['trusted_host_patterns'] = [
+  '^${drupal9}\.local$',
+  '^.+\.${drupal9}\.local$',
+  ];
+$databases['default']['default'] = array (
+  'database' => '${drupal9}',
+  'username' => 'dev',
+  'password' => 'dev',
+  'prefix' => '',
+  'host' => 'host.docker.internal',
+  'port' => '3306',
+  'namespace' => 'Drupal\\Core\\Database\\Driver\\mysql',
+  'driver' => 'mysql',
+);
+$settings['config_sync_directory'] = '';

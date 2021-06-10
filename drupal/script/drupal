@@ -1,0 +1,46 @@
+# Accept arguments
+while getopts ":s:" opt
+  do
+    case $opt in
+      s ) sites=$OPTARG;;
+    esac
+done
+
+for site in $sites;do
+  echo $site
+  sed -e "s/\drupal9/$site/g" ngx/sites-enabled/drupal9.local > ngx/sites-enabled/${site}.local
+  dir="src/${site}"
+  mkdir -p ${dir} 
+
+  # copy composer json and luck file from drupal directory to $site location
+  cp drupal/composer.json ${dir}
+  cp drupal/composer.lock ${dir}
+
+  #run composer update
+  composer update --working-dir=${dir}
+
+  rand=`openssl rand -base64 32`
+  cat drupal/settings_default.php > ${dir}/web/sites/default/settings.php
+  echo '$settings["hash_salt"]' "= \"${rand}\";" >> ${dir}/web/sites/default/settings.php
+  sed 's/${drupal9}/'$site'/g' drupal/settings_addon >> ${dir}/web/sites/default/settings.php
+  mkdir -p ${dir}/web/sites/default/files
+  tar -zxf drupal/drupal9files.tar.gz --directory ${dir}/web/sites/default/files
+
+  # # Mysql database schema creation and update it from dump file
+  mysql -u dev -pdev -e "drop database IF EXISTS  ${site}" 
+  mysql -u dev -pdev -e "create database IF NOT EXISTS  ${site}" 
+  mysql -u dev -pdev ${site} < mysql/drupal9.sql
+
+  # Add drush command to script.sh file
+  root="/var/www/${site}"
+  drushcom="drush --root=${root}"
+  echo ${drushcom} 'cr ' > tmp.sh
+  echo ${drushcom} 'cron ' >> tmp.sh
+  echo ${drushcom}  'en -y tracker ban book content_moderation media layout_builder layout_discovery admin_toolbar admin_toolbar_tools ctools field_group datetime_range telephone ctools_entity_mask pathauto redirect redirect_404 seckit' >> tmp.sh
+  sed "/#sites/ r tmp.sh" system/local/script.sh > script2.sh
+  mv -f script2.sh system/local/script.sh 
+  rm tmp.sh
+  
+  # custom_module
+  
+done
