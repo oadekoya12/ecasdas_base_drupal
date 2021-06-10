@@ -1,0 +1,41 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      docker: 18
+    commands:
+      - mkdir -p ~/tmp && cd ~/tmp && curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+      - cd ~/tmp && unzip awscliv2.zip && ./aws/install --update && cd  .. && rm -rf ~/tmp
+      - yum install -y yum-utils
+      - yum-config-manager  --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+      - yum install -y docker-ce docker-ce-cli containerd.io
+      - yum install -y git
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws --version
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 908883891338.dkr.ecr.us-east-1.amazonaws.com 
+      - REPOSITORY_URI=908883891338.dkr.ecr.us-east-1.amazonaws.com/ecasdas_base_config
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=latest
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image...
+      - echo $REPOSITORY_URI
+      - echo $IMAGE_TAG 
+      - echo $PWD
+      - ls -al
+      - dockerd &> /var/log/dockerd-logfile &
+      - ps -aux | grep docker
+      - git clone https://github.com/oadekoya12/ecasdas_base_config.git && cd ecasdas_base_config
+      - docker build -t 908883891338.dkr.ecr.us-east-1.amazonaws.com/ecasdas_base_config . 
+      # - docker build -t 908883891338.dkr.ecr.us-east-1.amazonaws.com/ecasdas_base_config:latest .
+      # - docker tag 908883891338.dkr.ecr.us-east-1.amazonaws.com/ecasdas_base_config:latest 908883891338.dkr.ecr.us-east-1.amazonaws.com/ecasdas_base_config:latest
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker images...
+      - docker push $REPOSITORY_URI:latest
+      # - docker push $REPOSITORY_URI:$IMAGE_TAG
