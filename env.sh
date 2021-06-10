@@ -1,7 +1,8 @@
 # /bin/sh
 
 mkdir -p tmp && cd tmp && tree ..
-git clone git@github.com:GSA/ECASDAS_BASE_CONFIG.git .
+git clone git@github.com:oadekoya12/ecasdas_base_config.git .
+# git clone git@github.com:GSA/ECASDAS_BASE_CONFIG.git .
 rm -rf .git .gitignore README.md
 cp -rf  ./* ../ 
 cd .. && rm -fr tmp
